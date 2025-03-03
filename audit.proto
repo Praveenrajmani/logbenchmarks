@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+option go_package = ".";
+
+package audit;
+
+message ProtoAuditLog {
+  int64 timestamp = 1;
+  string event = 2;
+  string user = 3;
+}

@@ -24,19 +24,19 @@ func (z *AuditLog) DecodeMsg(dc *msgp.Reader) (err error) {
 			return
 		}
 		switch msgp.UnsafeString(field) {
-		case "Timestamp":
+		case "timestamp":
 			z.Timestamp, err = dc.ReadInt64()
 			if err != nil {
 				err = msgp.WrapError(err, "Timestamp")
 				return
 			}
-		case "Event":
+		case "event":
 			z.Event, err = dc.ReadString()
 			if err != nil {
 				err = msgp.WrapError(err, "Event")
 				return
 			}
-		case "User":
+		case "user":
 			z.User, err = dc.ReadString()
 			if err != nil {
 				err = msgp.WrapError(err, "User")
@@ -56,8 +56,8 @@ func (z *AuditLog) DecodeMsg(dc *msgp.Reader) (err error) {
 // EncodeMsg implements msgp.Encodable
 func (z AuditLog) EncodeMsg(en *msgp.Writer) (err error) {
 	// map header, size 3
-	// write "Timestamp"
-	err = en.Append(0x83, 0xa9, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70)
+	// write "timestamp"
+	err = en.Append(0x83, 0xa9, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70)
 	if err != nil {
 		return
 	}
@@ -66,8 +66,8 @@ func (z AuditLog) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "Timestamp")
 		return
 	}
-	// write "Event"
-	err = en.Append(0xa5, 0x45, 0x76, 0x65, 0x6e, 0x74)
+	// write "event"
+	err = en.Append(0xa5, 0x65, 0x76, 0x65, 0x6e, 0x74)
 	if err != nil {
 		return
 	}
@@ -76,8 +76,8 @@ func (z AuditLog) EncodeMsg(en *msgp.Writer) (err error) {
 		err = msgp.WrapError(err, "Event")
 		return
 	}
-	// write "User"
-	err = en.Append(0xa4, 0x55, 0x73, 0x65, 0x72)
+	// write "user"
+	err = en.Append(0xa4, 0x75, 0x73, 0x65, 0x72)
 	if err != nil {
 		return
 	}
@@ -93,14 +93,14 @@ func (z AuditLog) EncodeMsg(en *msgp.Writer) (err error) {
 func (z AuditLog) MarshalMsg(b []byte) (o []byte, err error) {
 	o = msgp.Require(b, z.Msgsize())
 	// map header, size 3
-	// string "Timestamp"
-	o = append(o, 0x83, 0xa9, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70)
+	// string "timestamp"
+	o = append(o, 0x83, 0xa9, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70)
 	o = msgp.AppendInt64(o, z.Timestamp)
-	// string "Event"
-	o = append(o, 0xa5, 0x45, 0x76, 0x65, 0x6e, 0x74)
+	// string "event"
+	o = append(o, 0xa5, 0x65, 0x76, 0x65, 0x6e, 0x74)
 	o = msgp.AppendString(o, z.Event)
-	// string "User"
-	o = append(o, 0xa4, 0x55, 0x73, 0x65, 0x72)
+	// string "user"
+	o = append(o, 0xa4, 0x75, 0x73, 0x65, 0x72)
 	o = msgp.AppendString(o, z.User)
 	return
 }
@@ -123,19 +123,19 @@ func (z *AuditLog) UnmarshalMsg(bts []byte) (o []byte, err error) {
 			return
 		}
 		switch msgp.UnsafeString(field) {
-		case "Timestamp":
+		case "timestamp":
 			z.Timestamp, bts, err = msgp.ReadInt64Bytes(bts)
 			if err != nil {
 				err = msgp.WrapError(err, "Timestamp")
 				return
 			}
-		case "Event":
+		case "event":
 			z.Event, bts, err = msgp.ReadStringBytes(bts)
 			if err != nil {
 				err = msgp.WrapError(err, "Event")
 				return
 			}
-		case "User":
+		case "user":
 			z.User, bts, err = msgp.ReadStringBytes(bts)
 			if err != nil {
 				err = msgp.WrapError(err, "User")

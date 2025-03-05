@@ -1,47 +1,19 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
-	"fmt"
+	"io"
 	"testing"
-	"time"
 
 	"github.com/klauspost/compress/zstd"
-	"github.com/vmihailenco/msgpack/v5"
-
 	"google.golang.org/protobuf/proto"
 )
-
-// Import generated Protobuf file
-type AuditLog struct {
-	Timestamp int64  `json:"timestamp"`
-	Event     string `json:"event"`
-	User      string `json:"user"`
-}
-
-// Create a sample log entry
-func newLogEntry() *AuditLog {
-	return &AuditLog{
-		Timestamp: time.Now().Unix(),
-		Event:     "user_login",
-		User:      "admin",
-	}
-}
-
-func newProtoLogEntry() *ProtoAuditLog {
-	return &ProtoAuditLog{
-		Timestamp: time.Now().Unix(),
-		Event:     "user_login",
-		User:      "admin",
-	}
-}
 
 // Benchmark JSON Serialization
 func BenchmarkJSONSerialization(b *testing.B) {
 	logEntry := newLogEntry()
 	b.ResetTimer()
-
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		_, _ = json.Marshal(logEntry)
 	}
@@ -52,6 +24,7 @@ func BenchmarkJSONDeserialization(b *testing.B) {
 	logEntry := newLogEntry()
 	data, _ := json.Marshal(logEntry)
 	b.ResetTimer()
+	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
 		var log AuditLog
@@ -63,12 +36,13 @@ func BenchmarkJSONDeserialization(b *testing.B) {
 func BenchmarkJSONZstdCompression(b *testing.B) {
 	logEntry := newLogEntry()
 	data, _ := json.Marshal(logEntry)
-	b.ResetTimer()
+	writer, _ := zstd.NewWriter(io.Discard)
+	var dst []byte
 
+	b.ResetTimer()
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		var buf bytes.Buffer
-		writer, _ := zstd.NewWriter(&buf)
-		_, _ = writer.Write(data)
+		dst = writer.EncodeAll(data, dst[:0])
 		writer.Close()
 	}
 }
@@ -77,6 +51,7 @@ func BenchmarkJSONZstdCompression(b *testing.B) {
 func BenchmarkProtobufSerialization(b *testing.B) {
 	logEntry := newProtoLogEntry()
 	b.ResetTimer()
+	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
 		_, _ = proto.Marshal(logEntry)
@@ -88,6 +63,7 @@ func BenchmarkProtobufDeserialization(b *testing.B) {
 	logEntry := newProtoLogEntry()
 	data, _ := proto.Marshal(logEntry)
 	b.ResetTimer()
+	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
 		var log ProtoAuditLog
@@ -99,12 +75,13 @@ func BenchmarkProtobufDeserialization(b *testing.B) {
 func BenchmarkProtobufZstdCompression(b *testing.B) {
 	logEntry := newProtoLogEntry()
 	data, _ := proto.Marshal(logEntry)
-	b.ResetTimer()
+	writer, _ := zstd.NewWriter(io.Discard)
+	var dst []byte
 
+	b.ResetTimer()
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		var buf bytes.Buffer
-		writer, _ := zstd.NewWriter(&buf)
-		_, _ = writer.Write(data)
+		dst = writer.EncodeAll(data, dst[:0])
 		writer.Close()
 	}
 }
@@ -112,57 +89,65 @@ func BenchmarkProtobufZstdCompression(b *testing.B) {
 // Benchmark MessagePack Serialization
 func BenchmarkMessagePackSerialization(b *testing.B) {
 	logEntry := newLogEntry()
+	var dst []byte
 	b.ResetTimer()
+	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		_, _ = msgpack.Marshal(logEntry)
+		dst, _ = logEntry.MarshalMsg(dst[:0])
+	}
+}
+
+// Benchmark MessagePack de-Serialization
+func BenchmarkMessagePackDeserialization(b *testing.B) {
+	logEntry := newLogEntry()
+	dst, _ := logEntry.MarshalMsg(nil)
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		logEntry.UnmarshalMsg(dst)
+	}
+}
+
+func BenchmarkMessagePackTupleSerialization(b *testing.B) {
+	e := *newLogEntry()
+	logEntry := AuditLogTuple(e)
+	var dst []byte
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		dst, _ = logEntry.MarshalMsg(dst[:0])
 	}
 }
 
 // Benchmark MessagePack + Zstd Compression
 func BenchmarkMessagePackZstdCompression(b *testing.B) {
 	logEntry := newLogEntry()
-	data, _ := msgpack.Marshal(logEntry)
-	b.ResetTimer()
+	data, _ := logEntry.MarshalMsg(nil)
+	writer, _ := zstd.NewWriter(io.Discard)
+	var dst []byte
 
+	b.ResetTimer()
+	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		var buf bytes.Buffer
-		writer, _ := zstd.NewWriter(&buf)
-		_, _ = writer.Write(data)
+		dst = writer.EncodeAll(data, dst[:0])
 		writer.Close()
 	}
 }
 
-// Run Size Comparisons
-func main() {
-	logEntry := newLogEntry()
-	protoLogEntry := newProtoLogEntry()
+// Benchmark MessagePack + Zstd Compression
+func BenchmarkMessagePackTupleZstdCompression(b *testing.B) {
+	logEntry := AuditLogTuple(*newLogEntry())
+	data, _ := logEntry.MarshalMsg(nil)
+	writer, _ := zstd.NewWriter(io.Discard)
+	var dst []byte
 
-	// Serialize logs
-	jsonData, _ := json.Marshal(logEntry)
-	protoData, _ := proto.Marshal(protoLogEntry)
-	msgpackData, _ := msgpack.Marshal(logEntry)
-
-	// Compress logs using Zstd
-	var jsonCompressed, msgpackCompressed, protoCompressed bytes.Buffer
-	jsonWriter, _ := zstd.NewWriter(&jsonCompressed)
-	msgpackWriter, _ := zstd.NewWriter(&msgpackCompressed)
-	protoWriter, _ := zstd.NewWriter(&protoCompressed)
-
-	jsonWriter.Write(jsonData)
-	protoWriter.Write(protoData)
-	msgpackWriter.Write(msgpackData)
-
-	jsonWriter.Close()
-	protoWriter.Close()
-	msgpackWriter.Close()
-
-	// Print file size results
-	fmt.Println("Size Comparison (Bytes):")
-	fmt.Printf("JSON: %d bytes\n", len(jsonData))
-	fmt.Printf("Protobuf: %d bytes\n", len(protoData))
-	fmt.Printf("MessagePack: %d bytes\n", len(msgpackData))
-	fmt.Printf("JSON + Zstd: %d bytes\n", jsonCompressed.Len())
-	fmt.Printf("Protobuf + Zstd: %d bytes\n", protoCompressed.Len())
-	fmt.Printf("MessagePack + Zstd: %d bytes\n", msgpackCompressed.Len())
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		dst = writer.EncodeAll(data, dst[:0])
+		writer.Close()
+	}
 }

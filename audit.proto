@@ -4,8 +4,49 @@ option go_package = ".";
 
 package audit;
 
+message ObjectVersionProto {
+  string objectName = 1;
+  string versionId = 2;
+}
+
+message API {
+  string name = 1;
+  string bucket = 2;
+  string object = 3;
+  repeated ObjectVersionProto objects = 4;
+  string status = 5;
+  int32 statusCode = 6;
+  int64 rx = 7;
+  int64 tx = 8;
+  int64 txHeaders = 9;
+  string timeToFirstByte = 10;
+  string timeToFirstByteInNS = 11;
+  string timeToResponse = 12;
+  string timeToResponseInNS = 13;
+}
+
+message ProtoAuditLogList {
+  repeated ProtoAuditLog entries = 1;
+}
+
 message ProtoAuditLog {
-  int64 timestamp = 1;
-  string event = 2;
-  string user = 3;
+  string version = 1;
+  string deploymentId = 2;
+  string time = 3;
+  string event = 4;
+  string type = 5;
+  string trigger = 6;
+  API api = 7;
+  string remoteHost = 8;
+  string requestId = 9;
+  string userAgent = 10;
+  string requestPath = 11;
+  string requestHost = 12;
+  map<string, string> requestQuery = 13;
+  map<string, string> requestHeader = 14;
+  map<string, string> responseHeader = 15;
+  map<string, string> tags = 16;
+  string accessKey = 17;
+  string parentUser = 18;
+  string error = 19;
 }
